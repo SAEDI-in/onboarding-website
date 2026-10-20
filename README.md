@@ -97,7 +97,7 @@ site shows success without sending, and the Apps Script ignores it as well.
 
 Everything in square brackets is a placeholder carried over from the design.
 
-- `[hello@yourdomain.com]` — contact email, in the header links, footer, FAQ, About and form error text (search for `yourdomain.com`).
+- Contact email is `support@saedi.in` everywhere (footer, FAQ, About, form error text, ambassador mailto). Search for `support@saedi.in` to change it.
 - `[Founder name]`, `[Founder photo]`, founder bio and the LinkedIn link on `about.html`.
 - The founder's "Connect on LinkedIn" button on `about.html` (`href="#"`). The footer LinkedIn icon already points to the company page, <https://www.linkedin.com/company/saedi-in/>. Instagram is left out until there is an account.
 - FAQ answers on `how-it-works.html` that mention reward policy and pricing.
