@@ -33,6 +33,44 @@ python -m http.server 8080
 Then open <http://localhost:8080>. Opening the HTML files directly from disk also
 works, apart from the Google Fonts request on some browsers.
 
+## Deploy: GitHub Pages at saedi.in
+
+The site is served by GitHub Pages from the `main` branch root. `CNAME` holds the
+custom domain and `.nojekyll` skips Jekyll processing.
+
+1. **Repository visibility.** The SAEDI-in organisation is on the free plan, which
+   only serves Pages from public repositories. Make this repo public
+   (Settings > General > Danger Zone > Change visibility) or upgrade the plan.
+2. **Enable Pages.** Settings > Pages > Build and deployment > Source: *Deploy from a
+   branch*, Branch: `main`, folder `/ (root)`. Or from a terminal:
+   ```bash
+   gh api -X POST repos/SAEDI-in/onboarding-website/pages -f 'source[branch]=main' -f 'source[path]=/'
+   ```
+3. **Custom domain.** Settings > Pages > Custom domain: `saedi.in`, Save. (The
+   `CNAME` file sets this too; the setting just makes it explicit.)
+4. **DNS at the registrar** (saedi.in is currently parked at Hostinger; hPanel >
+   Domains > saedi.in > DNS / Name servers). Remove the parking `A` record and add:
+
+   | Type  | Name | Value                    |
+   | ----- | ---- | ------------------------ |
+   | A     | @    | 185.199.108.153          |
+   | A     | @    | 185.199.109.153          |
+   | A     | @    | 185.199.110.153          |
+   | A     | @    | 185.199.111.153          |
+   | AAAA  | @    | 2606:50c0:8000::153      |
+   | AAAA  | @    | 2606:50c0:8001::153      |
+   | AAAA  | @    | 2606:50c0:8002::153      |
+   | AAAA  | @    | 2606:50c0:8003::153      |
+   | CNAME | www  | saedi-in.github.io       |
+
+   DNS changes take from a few minutes to a day to spread.
+5. **HTTPS.** Once Settings > Pages shows the DNS check passing, GitHub issues a
+   certificate (usually within an hour). Then tick **Enforce HTTPS**.
+6. Optional but recommended: verify the domain for the organisation
+   (Organisation settings > Pages > Verified domains) so nobody else can claim it.
+
+Every push to `main` redeploys the site within a minute or two.
+
 ## Waitlist form
 
 The form on Home and For students posts to the URL in `js/config.js`
