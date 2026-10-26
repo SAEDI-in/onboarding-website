@@ -42,6 +42,13 @@ function doPost(e) {
     if (!email) return json_({ ok: false, error: 'Email is required.' });
 
     var sheet = getSheet_();
+
+    // Same email twice (double click, retry from the browser queue): keep one row.
+    var emails = sheet.getLastRow() > 1 ? sheet.getRange(2, 3, sheet.getLastRow() - 1, 1).getValues() : [];
+    for (var i = 0; i < emails.length; i++) {
+      if (String(emails[i][0]).toLowerCase() === email.toLowerCase()) return json_({ ok: true });
+    }
+
     sheet.appendRow([
       new Date(),
       String(data.name || '').trim(),

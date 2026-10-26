@@ -54,6 +54,48 @@
   }
 
   /* 3. Waitlist form --------------------------------------------------- */
+  var QUEUE_KEY = 'saedi.waitlist.pending';
+
+  // Sent as text/plain on purpose: it keeps the request "simple" (no CORS
+  // preflight), which Google Apps Script web apps require. The body is JSON.
+  function send(entry) {
+    return fetch(WAITLIST_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(entry)
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json().catch(function () { return { ok: true }; });
+      })
+      .then(function (data) {
+        if (data && data.ok === false) throw new Error(data.error || 'Rejected');
+      });
+  }
+
+  function readQueue() {
+    try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function writeQueue(list) {
+    try { localStorage.setItem(QUEUE_KEY, JSON.stringify(list)); } catch (e) { /* storage blocked */ }
+  }
+  function queue(entry) {
+    var list = readQueue();
+    list.push(entry);
+    writeQueue(list);
+  }
+  // Retry entries that failed earlier; drop each one only after the server accepted it.
+  function flushQueue() {
+    if (!WAITLIST_ENDPOINT) return;
+    var list = readQueue();
+    if (!list.length) return;
+    writeQueue([]);
+    list.forEach(function (entry) {
+      send(entry).catch(function () { queue(entry); });
+    });
+  }
+  flushQueue();
+
   var forms = document.querySelectorAll('.wl-form');
   Array.prototype.forEach.call(forms, function (box) {
     var form = box.querySelector('form');
@@ -114,29 +156,23 @@
       entry.userAgent = navigator.userAgent;
 
       if (!WAITLIST_ENDPOINT) {
-        console.warn('[SAEDI] waitlistEndpoint is not set in js/config.js; entry was not sent anywhere.', entry);
-        showDone(first, email);
+        // Never pretend a sign-up was saved when it was not. Keep a local copy and tell the visitor.
+        console.error('[SAEDI] waitlistEndpoint is not set in js/config.js; entry was NOT sent.', entry);
+        queue(entry);
+        if (error) error.hidden = false;
         return;
       }
 
       setBusy(true);
-      // Sent as text/plain on purpose: it keeps the request "simple" (no CORS
-      // preflight), which Google Apps Script web apps require. The body is JSON.
-      fetch(WAITLIST_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(entry)
-      })
-        .then(function (res) {
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          return res.json().catch(function () { return { ok: true }; });
-        })
-        .then(function (data) {
-          if (data && data.ok === false) throw new Error(data.error || 'Rejected');
+      send(entry)
+        .then(function () {
           showDone(first, email);
+          flushQueue();
         })
         .catch(function (err) {
+          // Keep the entry so it is retried the next time someone opens the site on this device.
           console.error('[SAEDI] waitlist submit failed', err);
+          queue(entry);
           if (error) error.hidden = false;
         })
         .then(function () { setBusy(false); });
